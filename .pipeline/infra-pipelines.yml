@@ -1,0 +1,80 @@
+trigger: 
+  - main
+pool: ElearnPool
+stages:
+  - stage: InfraPlanning
+    displayName: Infra Planning
+    jobs:
+      - job: InfraPlanningJob
+        displayName: Infra Planning 
+        steps:
+          - task: TerraformTask@5
+            displayName: Terraform Init
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: 'environment'
+              backendAzureRmUseEntraIdForAuthentication: false
+              backendServiceArm: 'Elearn Portal'
+              backendAzureRmOverrideSubscriptionID: 'a4b25e75-be62-4cb6-bcb5-48e2492054ab'
+              backendAzureRmResourceGroupName: 'elearnstate'
+              backendAzureRmStorageAccountName: 'elearnstate'
+              backendAzureRmContainerName: 'elearnmicrostate'
+              backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTask@5
+            displayName: Terraform Validate
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+              workingDirectory: 'environment'
+          - task: TerraformTask@5
+            displayName: Terraform Plan
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              workingDirectory: 'environment'
+              environmentServiceNameAzureRM: 'Elearn Portal'
+  - stage: ManualValidation
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    displayName: Manual Validation
+    jobs:
+      - job: ManualValidationJob
+        displayName: Manual Validation
+        pool: server
+        steps:
+          - task: ManualValidation@1
+            inputs:
+              notifyUsers: 'Sanidhya1119@outlook.com'
+              approvers: 'Sanidhya1119@outlook.com'
+  - stage: InfraImplementation
+    displayName: Infra Implementation
+    jobs:
+      - job: InfraImplementationJob
+        displayName: Infra Implementation
+        steps:
+          - task: TerraformTask@5
+            displayName: Terraform Init
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: 'environment'
+              backendAzureRmUseEntraIdForAuthentication: false
+              backendServiceArm: 'Elearn Portal'
+              backendAzureRmOverrideSubscriptionID: 'a4b25e75-be62-4cb6-bcb5-48e2492054ab'
+              backendAzureRmResourceGroupName: 'elearnstate'
+              backendAzureRmStorageAccountName: 'elearnstate'
+              backendAzureRmContainerName: 'elearnmicrostate'
+              backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTask@5
+            displayName: Terraform Validate
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+              workingDirectory: 'environment'
+          - task: TerraformTask@5
+            displayName: Terraform Apply
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: 'environment'
+              environmentServiceNameAzureRM: 'Elearn Portal'
